@@ -4,34 +4,54 @@
 #include <queue>
 #include <list>
 using namespace std;
-#define MAX 100001
 
-ifstream in("bfs.in");
-ofstream out("bfs.out");
+#define MAX 100001
+bool visited_DFS[MAX];
+
+ifstream in("dfs.in");
+ofstream out("dfs.out");
 
 
 class Graph {
 private:
+
     int nrV;    //number of vertiges
     int nrE;    //number of edges
     bool oriented; // True if the graph is oriented
     vector <int> edges[MAX]; //adjacency list
 public:
-    Graph() { cout<<"\nconstructor\n";}
+
     Graph(int x, int y, bool z) {nrV=x; nrE=y; oriented=z;}
-    void read_o_graph();
+    void read_graph();  // read and make the actual graph
     void BFS( int s ); // s = start node
+    void DFS( int s );
+    void DFS_conex_comp();
 };
 
 
- void Graph :: read_o_graph () {
-    for(int i = 1; i <= nrE; i++)
+ void Graph :: read_graph () {
+    if (oriented==true)
     {
-        int x, y;
-        in >> x >> y;
-        edges[x].push_back(y);
+        for(int i = 1; i <= nrE; i++)
+        {
+            int x, y;
+            in >> x >> y;
+            edges[x].push_back(y);
 
+        }
     }
+    else
+    {
+            for(int i = 1; i <= nrE; i++)
+        {
+            int x, y;
+            in >> x >> y;
+            edges[x].push_back(y);
+            edges[y].push_back(x);
+
+        }
+    }
+
 }
 
 void Graph :: BFS (int s) {
@@ -64,21 +84,42 @@ void Graph :: BFS (int s) {
 
 }
 
+void Graph :: DFS(int s){
+    // functie apelata de DFS_conex_comp
+    visited_DFS[s] = true;
+    for( int i : edges[s] )
+            if(!visited_DFS[i])
+                DFS(i);
+    
+}
 
+void Graph :: DFS_conex_comp(){
+    int nr = 0;
+    for(int i=1; i<= nrV; i++)
+        if(!visited_DFS[i])
+        {
+            DFS(i);
+            nr++;
+        }
+    out << nr;
+}
 
 
 int main()
 {
 
-     int n; int m; int s;
-     in>>n>>m>>s;
+    int n; int m;
+    in>>n>>m;
 
-     Graph g2(n,m,s);
-     g2.read_o_graph();
-     g2.BFS(s);
+    Graph g2(n,m,0);
+    g2.read_graph();
 
-     in.close();
-     out.close();
+    //g2.BFS(s);
+    g2.DFS_conex_comp();
+
+
+    in.close();
+    out.close();
 
 return 0;
 }

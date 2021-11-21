@@ -4,9 +4,12 @@
 #include <queue>
 #include <list>
 #include <stack>
+#include <tuple>
+#include <algorithm>
+
 using namespace std;
 
-#define MAX 100001
+#define MAX 1001
 
 // for DFS
 bool visited_DFS[MAX];
@@ -17,8 +20,8 @@ bool visited_DFS[MAX];
 // bool visited_DFS_transp_graph[MAX];
 
 // files
-ifstream in("ctc.in");
-ofstream out("ctc.out");
+ifstream in("apm.in");
+ofstream out("apm.out");
 
 
 class Graph {
@@ -28,21 +31,34 @@ private:
     int nrE;    //number of edges
     bool oriented; // True if the graph is oriented
     vector <int> edges[MAX]; //adjacency list
-
+    vector < vector < pair <int, int> > > weighted_edges; //adjacency list for weighted graph 
+    
 public:
-
+    
     Graph(int x, int y, bool z) {nrV=x; nrE=y; oriented=z;}
+
+    ///Tema 1
     void read_graph();  // read and make the actual graph
+
     void BFS( int s ); // s = start node
+    
     void DFS( int s ); // used for DFS_conex_comp
     void DFS_conex_comp();
 
-    void get_transposed_graph(vector<int> edges_transp[]); //transposed graph used for SCC
+  /*  void get_transposed_graph(vector<int> edges_transp[]); //transposed graph used for SCC
     void DFS_SCC(int v, vector <int> edges_transp[], int nr, vector<int> comp); 
     void order_SCC(int v, bool visited_SCC[], stack<int> s);
     void SCC(); // Strongly Connected Components (CTC)
-    
+  */ 
 
+    ///Tema 2
+    void read_weighted_graph(); 
+
+    int repr(int v, vector <int> &root);
+    void link(int v1, int v2, vector <int> &height, vector <int> &root);
+    void APM();
+
+    void Bellman_Ford(int s); //s-start node
 
 };
 
@@ -69,6 +85,32 @@ public:
 
         }
     }
+
+}
+
+void Graph :: read_weighted_graph(){
+    if (oriented==true)
+    {
+        for(int i = 1; i <= nrE; i++)
+        {
+            int x, y, c;
+            in >> x >> y >> c;
+            weighted_edges[x].push_back(make_pair(y,c));
+
+        }
+    }
+    else
+    {
+            for(int i = 1; i <= nrE; i++)
+        {
+            int x, y, c;
+            in >> x >> y >> c;
+            weighted_edges[x].push_back(make_pair(y,c));
+            weighted_edges[y].push_back(make_pair(x,c));
+
+        }
+    }
+
 
 }
 
@@ -112,7 +154,7 @@ void Graph :: DFS(int s){
 }
 
 void Graph :: DFS_conex_comp(){
-    int nr = 0;
+    int nr = 0;   // nr comp conexe
     for(int i=1; i<= nrV; i++)
         if(!visited_DFS[i])
         {
@@ -122,6 +164,7 @@ void Graph :: DFS_conex_comp(){
     out << nr;
 }
 
+/*
 void Graph :: get_transposed_graph(vector<int> edges_transp[]){
     for(int i = 1 ; i <= nrV ; i++)
         for(int j : edges[i])
@@ -174,13 +217,90 @@ void Graph :: SCC(){
         }
     }
 
+}
 
+*/
+
+int Graph :: repr(int v, vector <int> &root){
+    while (root[v] != v)
+        v=root[v];
+    return v;
+}
+
+void Graph :: link(int v1, int v2, vector <int> &height, vector <int> &root){
+    int rv1=repr(v1, root);
+    int rv2=repr(v2, root);
+    
+    if(height[rv1]>height[rv2])
+        root[rv2]=rv1;
+    else
+        {
+            root[rv1]=rv2;
+            if(height[rv1]==height[rv2])
+                height[rv2]++;
+        }
+}
+
+void Graph :: APM (){
+    //Kruskal
+    int x, y, c;
+    vector < tuple <int,int,int> > edges_weights_list; //vector (E1,E2,W)
+    int cost_apm = 0;
+    int nr = 0;  //numarul de muchii din APM la un moment dat (pt stop condition)
+    vector <int> height(nrV+1, 1);  //inaltimea arborelui 
+    vector <int> root(nrV+1);  //radacina arborelui
+    vector <bool> edges(nrE+1,0);  //folosit pt a scrie la final muchiile din apm
+    
+    // formez vectorul de muchii si costuri
+    for(int i=0; i<nrE; ++i)
+    {
+        in>>x>>y>>c;
+        edges_weights_list.push_back(make_tuple(x,y,c));
+    }
+
+    for(int i=1; i<=nrV; ++i)
+        root[i]=i;
+
+    // sortare muchii dupa cost
+    sort (edges_weights_list.begin(), edges_weights_list.end(),
+            [](const tuple<int, int, int> &c1, const tuple<int, int, int> &c2) { return get<2>(c1) < get<2>(c2); });
+
+    //Iau pe rand muchiile din vector si verific daca formeaza un ciclu cu apm-ul format
+    //pana in momentul i; Daca nu formeaza un ciclu includ muchia in APM. 
+    // Repet pasul anterior pana am nrV-1 muchii in apm
+
+    for(int i=0; i<nrE && nr<nrV-1; i++)
+    {
+        int v1=get<0>(edges_weights_list[i]);
+        int v2=get<1>(edges_weights_list[i]);
+        int cost=get<2>(edges_weights_list[i]);
+
+        int rv1 = repr(v1, root);
+        int rv2 = repr(v2, root);
+
+        if(rv1 != rv2)  //daca nu fac parte din aceeasi comp conexa
+        {
+            nr++;
+            link(v1,v2,height,root);
+            cost_apm=cost_apm+cost;
+            edges[i]=1;     
+        }
+
+
+    }
+
+    out<< cost_apm<<'\n'<<nr <<'\n';
+    for (int i=0; i<nrE; i++)
+        if(edges[i])
+            out<<get<0>(edges_weights_list[i])<<' '<< get<1>(edges_weights_list[i])<<'\n';
 
 
 
 }
 
+void Graph :: Bellman_Ford(int s){
 
+}
 
 int main()
 {
@@ -189,12 +309,12 @@ int main()
     in>>n>>m;
 
     Graph g2(n,m,0);
-    g2.read_graph();
+    //g2.read_graph();
 
     //g2.BFS(s);
     //g2.DFS_conex_comp();
 
-
+    g2.APM();
     in.close();
     out.close();
 

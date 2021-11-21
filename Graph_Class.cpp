@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#define MAX 1001
+#define MAX 100001
 
 // for DFS
 bool visited_DFS[MAX];
@@ -20,8 +20,8 @@ bool visited_DFS[MAX];
 // bool visited_DFS_transp_graph[MAX];
 
 // files
-ifstream in("apm.in");
-ofstream out("apm.out");
+ifstream in("disjoint.in");
+ofstream out("disjoint.out");
 
 
 class Graph {
@@ -41,7 +41,7 @@ public:
     void read_graph();  // read and make the actual graph
 
     void BFS( int s ); // s = start node
-    
+
     void DFS( int s ); // used for DFS_conex_comp
     void DFS_conex_comp();
 
@@ -54,9 +54,11 @@ public:
     ///Tema 2
     void read_weighted_graph(); 
 
-    int repr(int v, vector <int> &root);
-    void link(int v1, int v2, vector <int> &height, vector <int> &root);
+    int repr(int v, vector <int> &root);  //returneaza reprezentantul nodului v
+    void link(int v1, int v2, vector <int> &height, vector <int> &root); //leaga arborele mai mic de cel mai mare
     void APM();
+
+    void disj(); //Paduri de multimi disjuncte
 
     void Bellman_Ford(int s); //s-start node
 
@@ -298,7 +300,41 @@ void Graph :: APM (){
 
 }
 
+void Graph :: disj(){
+    //rezolvare cu arbori
+
+    //OBS!!! n si m, nr de multimi si nr de operatii au fost citite in main 
+    // si folosite de constructor pt a initializa graful, deci sunt nrV si nrE
+    int cod, x, y;
+    vector <int> height(nrV+1, 1), root(nrV+1);
+
+    //in>>n>>m;
+    cout<<nrV<<' '<<nrE;
+
+    for(int i=0; i<nrV; i++)
+        root[i]=i;
+
+
+    for(int i=0; i<nrE; i++)
+    {
+        in>>cod>>x>>y;
+        if(cod==1)
+            link(x,y,height,root); //refolosesc functia de la apm
+        else
+        {
+            int reprx=repr(x,root); //reprezentantul lui x
+            int repry=repr(y,root);
+            if (reprx == repry)
+                out<<"DA\n";
+            else out<<"NU\n";
+        }
+
+    }
+    
+
+}
 void Graph :: Bellman_Ford(int s){
+
 
 }
 
@@ -314,7 +350,9 @@ int main()
     //g2.BFS(s);
     //g2.DFS_conex_comp();
 
-    g2.APM();
+    //g2.APM();
+    g2.disj();
+
     in.close();
     out.close();
 

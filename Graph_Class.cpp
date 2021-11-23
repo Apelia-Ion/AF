@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#define MAX 1000001
+#define MAX 250005
 
 // for DFS
 bool visited_DFS[MAX];

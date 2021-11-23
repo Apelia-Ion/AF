@@ -6,10 +6,12 @@
 #include <stack>
 #include <tuple>
 #include <algorithm>
+#include <queue>
+#include <climits>
 
 using namespace std;
 
-#define MAX 100001
+#define MAX 1000001
 
 // for DFS
 bool visited_DFS[MAX];
@@ -20,8 +22,8 @@ bool visited_DFS[MAX];
 // bool visited_DFS_transp_graph[MAX];
 
 // files
-ifstream in("disjoint.in");
-ofstream out("disjoint.out");
+ifstream in("bellmanford.in");
+ofstream out("bellmanford.out");
 
 
 class Graph {
@@ -91,6 +93,9 @@ public:
 }
 
 void Graph :: read_weighted_graph(){
+
+    weighted_edges.resize(nrV+1);
+
     if (oriented==true)
     {
         for(int i = 1; i <= nrE; i++)
@@ -98,7 +103,6 @@ void Graph :: read_weighted_graph(){
             int x, y, c;
             in >> x >> y >> c;
             weighted_edges[x].push_back(make_pair(y,c));
-
         }
     }
     else
@@ -309,7 +313,7 @@ void Graph :: disj(){
     vector <int> height(nrV+1, 1), root(nrV+1);
 
     //in>>n>>m;
-    cout<<nrV<<' '<<nrE;
+    //cout<<nrV<<' '<<nrE;
 
     for(int i=0; i<nrV; i++)
         root[i]=i;
@@ -322,7 +326,7 @@ void Graph :: disj(){
             link(x,y,height,root); //refolosesc functia de la apm
         else
         {
-            int reprx=repr(x,root); //reprezentantul lui x
+            int reprx=repr(x,root); //reprezentantul lui x (vezi functia de la APM)
             int repry=repr(y,root);
             if (reprx == repry)
                 out<<"DA\n";
@@ -333,7 +337,56 @@ void Graph :: disj(){
     
 
 }
+
 void Graph :: Bellman_Ford(int s){
+
+    const int inf = INT_MAX;  
+    bool negative_cycle = false; 
+    vector <int> distance (nrV + 1, inf); //distante
+    vector <bool> in_queue (nrV + 1, false); // nodul x e sau nu in coada
+    vector <int> passes (nrV + 1, 0); //retine de cate ori am trecut printr-un nod
+    queue <int> queue; //nodurile ale caror distanta s-a modificat (pt optimizare)
+    
+    distance[s]=0;
+    queue.push(s);
+    in_queue[s] = true;
+
+    while(queue.empty() == false && negative_cycle == false)
+    {
+        int v1=queue.front();
+        queue.pop();
+        in_queue[v1]=0;
+        for(int i=0; i<weighted_edges[v1].size(); i++)
+        {
+            int v2 = get <0> (weighted_edges[v1][i]);
+            int c = get <1> (weighted_edges[v1][i]);
+            if(distance[v2]>distance[v1]+c) //relaxez muchia
+            {
+                distance[v2]=distance[v1]+c;
+                passes[v2]++;
+                if(!in_queue[v2])
+                {
+                    queue.push(v2);
+                    in_queue[v2]=true;
+
+                }
+
+                if(passes[v2]>=nrV)
+                negative_cycle=true;
+            }
+
+
+        }
+
+    }
+
+    if(negative_cycle == true)
+        out<<"Ciclu negativ!";
+    else
+        for(int i=1; i<nrV+1; i++)
+            if(i != s)
+                out<<distance[i]<<' ';
+    
 
 
 }
@@ -344,14 +397,17 @@ int main()
     int n; int m;
     in>>n>>m;
 
-    Graph g2(n,m,0);
+    Graph g2(n,m,1);
     //g2.read_graph();
 
     //g2.BFS(s);
     //g2.DFS_conex_comp();
 
     //g2.APM();
-    g2.disj();
+    //g2.disj();
+
+    g2.read_weighted_graph();
+    g2.Bellman_Ford(1);
 
     in.close();
     out.close();

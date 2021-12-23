@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#define MAX 250005
+#define MAX 100001
 
 // for DFS
 bool visited_DFS[MAX];
@@ -22,8 +22,8 @@ bool visited_DFS[MAX];
 // bool visited_DFS_transp_graph[MAX];
 
 // files
-ifstream in("bellmanford.in");
-ofstream out("bellmanford.out");
+ifstream in("royfloyd.in");
+ofstream out("royfloyd.out");
 
 
 class Graph {
@@ -34,10 +34,12 @@ private:
     bool oriented; // True if the graph is oriented
     vector <int> edges[MAX]; //adjacency list
     vector < vector < pair <int, int> > > weighted_edges; //adjacency list for weighted graph 
+    vector < vector <int> > weighted_marix;
     
 public:
     
     Graph(int x, int y, bool z) {nrV=x; nrE=y; oriented=z;}
+    Graph(int x, bool z){nrV=x; oriented=z;} // constructor 2 pentru cerintele la care nu avem nrE dat
 
     ///Tema 1
     void read_graph();  // read and make the actual graph
@@ -47,11 +49,7 @@ public:
     void DFS( int s ); // used for DFS_conex_comp
     void DFS_conex_comp();
 
-  /*  void get_transposed_graph(vector<int> edges_transp[]); //transposed graph used for SCC
-    void DFS_SCC(int v, vector <int> edges_transp[], int nr, vector<int> comp); 
-    void order_SCC(int v, bool visited_SCC[], stack<int> s);
-    void SCC(); // Strongly Connected Components (CTC)
-  */ 
+
 
     ///Tema 2
     void read_weighted_graph(); 
@@ -63,6 +61,13 @@ public:
     void disj(); //Paduri de multimi disjuncte
 
     void Bellman_Ford(int s); //s-start node
+
+    ///Tema 3
+
+    vector<vector<int>> Roy_Floyd();
+    void afisare_Roy_Floyd(); //afiseaza matricea drumurilor minime
+    void read_weighted_matrix(); //matricea ponderilor din cerinta
+    
 
 };
 
@@ -120,6 +125,23 @@ void Graph :: read_weighted_graph(){
 
 }
 
+void Graph :: read_weighted_matrix(){
+    int edges=0;
+    int elem;
+    weighted_marix.resize(nrV);
+
+    for(int i=0; i<nrV; i++)
+        for (int j=0; j<nrV; j++)
+            {
+                in >> elem;
+                weighted_marix[i].push_back(elem);
+                if(weighted_marix[i][j])
+                    edges++;
+            }
+    nrE=edges;
+
+}
+
 void Graph :: BFS (int s) {
     vector <bool> visited (nrV+1, false);
     vector <int> distance (nrV+1, -1);
@@ -169,63 +191,6 @@ void Graph :: DFS_conex_comp(){
         }
     out << nr;
 }
-
-/*
-void Graph :: get_transposed_graph(vector<int> edges_transp[]){
-    for(int i = 1 ; i <= nrV ; i++)
-        for(int j : edges[i])
-            edges_transp[j].push_back(i);
-    
-}
-
-void Graph :: order_SCC(int v, bool visited_SCC[], stack<int> s){
-     visited_SCC[v] = true;
-      for(int i : edges[v])
-        if(!visited_SCC[i])
-            order_SCC(i, visited_SCC, s);
-    s.push(v);
-}
-
-void Graph :: DFS_SCC(int v, vector <int> edges_transp[], int nr, vector<int> comp){
-    visited_DFS[v] = true;
-    comp[nr].push_back(v);
-    for(int i : edges_transp[v])
-        if(!visited_DFS[i])
-            DFS_SCC(i, edges_transp, nr, comp);
-
-}
-
-void Graph :: SCC(){
-    //  Kosaraju's Algorithm -- O(V+E)
-    int nr = 0;  //nr de componente tare conexe
-    stack <int> s;
-    vector <int> edges_transp[MAX], comp[MAX];
-    bool visited_SCC [MAX] = {false}; 
-
-    for(int i = 0; i < nrV; i++)
-        if(visited_SCC[i] == false)
-            order_SCC(i, visited_SCC, s);
-    
-    get_transposed_graph(edges_transp);
-
-    for(int i = 0; i < nrV; i++)
-        visited_SCC[i] = false;
-
-    while (!s.empty())
-    {
-        int v = s.top();
-        s.pop();
-        if(!visited_SCC[v])
-        {
-            nr = nr+1;
-            DFS_SCC(v, edges_transp, nr, comp);
-            
-        }
-    }
-
-}
-
-*/
 
 int Graph :: repr(int v, vector <int> &root){
     while (root[v] != v)
@@ -391,23 +356,71 @@ void Graph :: Bellman_Ford(int s){
 
 }
 
+ vector<vector<int>> Graph :: Roy_Floyd(){
+    vector< vector <int> > result; //matricea de drumuri minime
+    const int inf = INT_MAX;
+    result.resize(nrV);
+
+    for(int i=0;i<nrV;i++)
+        for(int j=0; j<nrV; j++)
+            {
+                if(weighted_marix[i][j])
+                    result[i].push_back(weighted_marix[i][j]);
+                else
+                    result[i].push_back(inf);
+            }
+
+
+    for(int k=0; k<nrV; k++)  //varfuri intermediare
+        for(int i=0;i<nrV;i++)
+            for(int j=0; j<nrV; j++)
+                if(result[i][j]>result[i][k]+result[k][j])
+                    result[i][j]=result[i][k]+result[k][j];
+    return result;
+}
+
+
+void Graph :: afisare_Roy_Floyd(){
+
+for (int i=0; i<nrV; i++)
+{
+    vector< vector <int> > result;
+    const int inf = INT_MAX;
+    result=Roy_Floyd();
+    
+    for(int j=0;j<nrV;j++)
+        if (result[i][j]!=inf && i!=j)
+            out<<result[i][j]<<' ';
+        else 
+            out<<0<<' ';
+    out<<'\n';
+}
+}
+
+
 int main()
 {
 
-    int n; int m;
-    in>>n>>m;
+    int n;
+    int m;
+    in>>n;
+    in>>m;
 
     Graph g2(n,m,1);
-    //g2.read_graph();
+    g2.read_graph();
 
     //g2.BFS(s);
-    //g2.DFS_conex_comp();
+    g2.DFS_conex_comp();
 
     //g2.APM();
     //g2.disj();
 
-    g2.read_weighted_graph();
-    g2.Bellman_Ford(1);
+    //g2.read_weighted_graph();
+    //g2.Bellman_Ford(1);
+
+    //Graph g(n,1);
+    //g.read_weighted_matrix();
+   //g.afisare_Roy_Floyd();
 
     in.close();
     out.close();
